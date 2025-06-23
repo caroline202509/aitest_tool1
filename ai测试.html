@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI工作流测试端MVP</title>
+    <style>
+        :root {
+            --primary-color: #1890ff;
+            --secondary-color: #f0f2f5;
+            --text-color: #333;
+            --border-color: #d9d9d9;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: var(--text-color);
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        /* 模式切换器 */
+        .mode-switcher {
+            background: white;
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            gap: 16px;
+        }
+        .mode-btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            font-weight: 500;
+        }
+        .mode-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        .mode-btn.inactive {
+            border-color: var(--border-color);
+        }
+        .mode-btn.inactive:hover {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        /* 主内容区 */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        /* 筛选区 */
+        .filter-panel {
+            width: 280px;
+            background: white;
+            border-right: 1px solid var(--border-color);
+            padding: 16px;
+            overflow-y: auto;
+        }
+        .filter-group {
+            margin-bottom: 16px;
+        }
+        .filter-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .filter-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+        }
+        .filter-select {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+            background: white;
+        }
+        /* 会话列表区 */
+        .session-list {
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .session-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .session-table th {
+            background: #fafafa;
+            padding: 8px 12px;
+            text-align: left;
+            font-weight: 500;
+            position: sticky;
+            top: 0;
+        }
+        .session-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--secondary-color);
+        }
+        .session-table tr:hover {
+            background: #fafafa;
+        }
+        .session-table .active {
+            background: #e6f7ff;
+        }
+        .load-btn {
+            color: var(--primary-color);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            text-decoration: underline;
+        }
+        /* 对话展示区 */
+        .conversation-panel {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .conversation-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            background: white;
+        }
+        /* 消息样式 */
+        .message {
+            margin-bottom: 16px;
+            position: relative;
+            padding-left: 40px;
+        }
+        .message-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .message-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+        .message-sender {
+            font-weight: 500;
+            margin-right: 8px;
+        }
+        .message-time {
+            font-size: 12px;
+            color: #999;
+        }
+        .message-content {
+            margin-bottom: 8px;
+        }
+        .message-text {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .message-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 4px;
+        }
+        /* 角色特定样式 */
+        .teacher .message-avatar {
+            background: var(--teacher-color);
+        }
+        .parent .message-avatar {
+            background: var(--parent-color);
+        }
+        .ai .message-avatar {
+            background: var(--ai-color);
+        }
+        /* 消息控制区 */
+        .message-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .control-btn {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 2px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: white;
+        }
+        .include-checkbox {
+            margin-right: 8px;
+        }
+        /* 操作区 */
+        .action-panel {
+            padding: 12px 16px;
+            background: white;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 8px;
+        }
+        .action-btn {
+            padding: 6px 12px;
+            border-radius: 2px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: white;
+        }
+        .primary-btn {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        /* 差异高亮 */
+        .diff-added {
+            background: #f6ffed;
+            border-bottom: 1px solid #b7eb8f;
+        }
+        .diff-removed {
+            background: #fff2f0;
+            border-bottom: 1px solid #ffccc7;
+        }
+        /* 错误状态 */
+        .error-status {
+            color: var(--error-color);
+            background: #fff1f0;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-size: 12px;
+        }
+        /* 新增：AI重试结果样式 */
+        .test-result-box {
+            background: #e6f7ff;
+            border: 1px solid #91d5ff;
+            border-radius: 4px;
+            margin-top: 8px;
+            padding: 10px 14px;
+            color: #0050b3;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(24,144,255,0.06);
+            position: relative;
+        }
+        .test-result-box .test-result-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #096dd9;
+        }
+        .test-result-box .test-result-diff {
+            margin-top: 4px;
+            font-size: 13px;
+            color: #333;
+        }
+        /* 区分AI和工作流消息颜色 */
+        .message.ai { background: #e6f7ff; }
+        .message.workflow-msg { background: #fffbe6; }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <!-- 模式切换器 -->
+        <div class="mode-switcher" style="display: flex; align-items: center;">
+            <div class="mode-btn active" data-mode="badcase" onclick="switchMode('badcase', this)">🔍 Badcase复现（带历史记录）</div>
+            <div class="mode-btn inactive" data-mode="workflow" onclick="switchMode('workflow', this)">⚙️ 工作流测试（无消息记录，一个机器人可能绑多条prompt）模式</div>
+            <button class="action-btn" style="margin-left:auto;" onclick="openSessionLog()">会话记录窗口</button>
+        </div>
+        
+        <div class="main-content" style="display: flex; height: 100%;">
+            <!-- 左侧筛选区 -->
+            <div class="filter-panel">
+                <div class="filter-group">
+                    <label class="filter-label">老师企微ID</label>
+                    <input type="text" class="filter-input" placeholder="输入老师ID">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">学生企微ID</label>
+                    <input type="text" class="filter-input" placeholder="输入学生ID">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">任务名称</label>
+                    <select class="filter-select">
+                        <option value="">自动激活</option>
+                        <option value="abnormal">确认姓名</option>
+                        <option value="complete">确认手机号</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">任务状态</label>
+                    <select class="filter-select">
+                        <option value="">全部</option>
+                        <option value="abnormal">异常</option>
+                        <option value="complete">完成</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">课程编码</label>
+                    <input type="text" class="filter-input" placeholder="输入课程编码">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">班级编码</label>
+                    <input type="text" class="filter-input" placeholder="输入班级编码">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">会话关键词</label>
+                    <input type="text" class="filter-input" placeholder="输入关键词">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">机器人编码</label>
+                    <select class="filter-select">
+                        <option value="">全部</option>
+                        <option value="bot1">教学助手v1.2</option>
+                        <option value="bot2">家长服务v2.0</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">时间范围</label>
+                    <select class="filter-select">
+                        <option value="custom">自定义</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" style="width: 100%; margin-top: 8px;">搜索</button>
+            </div>
+            <!-- 右侧内容区：badcase和workflow两个panel互斥显示 -->
+            <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+                <!-- badcase复现区 -->
+                <div id="badcase-panel" style="display: flex; flex-direction: column; height: 100%;">
+                    <!-- 会话列表区 -->
+                    <div class="session-list" id="session-list" style="max-height: 200px; overflow-y: auto;">
+                        <table class="session-table">
+                            <thead>
+                                <tr>
+                                    <th>会话id</th>
+                                    <th>老师ID</th>
+                                    <th>学生ID</th>
+                                    <th>会话状态</th>
+                                    <th>会话备注</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="active">
+                                    <td>111111</td>
+                                    <td>T10086</td>
+                                    <td>S2023001</td>
+                                    <td><span class="error-status">异常</span></td>
+                                    <td>XXXXXXXXXXXXXXX</td>
+                                    <td>2025-06-13 13:36:19</td>
+                                    <td><button class="load-btn" onclick="loadSession(1)">加载</button></td>
+                                </tr>
+                                <tr>
+                                    <td>XXXXXXX</td>
+                                    <td>T10087</td>
+                                    <td>S2023002</td>
+                                    <td>正常</td>
+                                    <td>XXXXXXXXXXXXXXX</td>
+                                    <td>2025-06-12 15:22:10</td>
+                                    <td><button class="load-btn" onclick="loadSession(2)">加载</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- 页码翻页器 -->
+                    <div class="pagination" id="pagination" style="display: flex; justify-content: flex-end; align-items: center; padding: 8px 0 8px 0; background: #fff; border-bottom: 1px solid #f0f2f5;">
+                        <button class="page-btn" style="margin: 0 4px; padding: 2px 8px; border: 1px solid #d9d9d9; background: #fafafa; cursor: pointer; border-radius: 2px;">上一页</button>
+                        <span style="margin: 0 8px;">第 <b>1</b> / <b>5</b> 页</span>
+                        <button class="page-btn" style="margin: 0 4px; padding: 2px 8px; border: 1px solid #d9d9d9; background: #fafafa; cursor: pointer; border-radius: 2px;">下一页</button>
+                    </div>
+                    <!-- 对话展示区 -->
+                    <div class="conversation-panel" id="conversation-panel">
+                        <div style="padding: 12px 16px; font-weight: bold; font-size: 16px; border-bottom: 1px solid #f0f2f5; background: #fafafa;">会话记录</div>
+                        <div class="conversation-container" id="conversation-container">
+                            <!-- 消息1 -->
+                            <div class="message parent">
+                                <div class="message-header">
+                                    <div class="message-avatar">家</div>
+                                    <div class="message-sender">家长</div>
+                                    <div class="message-time">2025-06-13 13:36:51</div>
+                                </div>
+                                <div class="message-content">
+                                    <div class="message-text">直播课有回放吗</div>
+                                    <div class="message-controls">
+                                        <label>
+                                            <input type="checkbox" class="include-checkbox" checked>
+                                            包含在测试中
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 消息2 工作流消息 -->
+                            <div class="message workflow-msg" style="background:#fffbe6;">
+                                <div class="message-header">
+                                    <div class="message-avatar">师</div>
+                                    <div class="message-sender">工作流消息</div>
+                                    <div class="message-time">2025-06-13 13:37:41</div>
+                                </div>
+                                <div class="message-content">
+                                    <div class="message-text">[流程提醒] 请确认学生信息</div>
+                                    <div class="message-controls">
+                                        <label>
+                                            <input type="checkbox" class="include-checkbox" checked>
+                                            包含在测试中
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 消息3 AI消息 -->
+                            <div class="message ai" style="background:#e6f7ff;">
+                                <div class="message-header">
+                                    <div class="message-avatar">AI</div>
+                                    <div class="message-sender">AI</div>
+                                    <div class="message-time">2025-06-13 13:39:05</div>
+                                </div>
+                                <div class="message-content">
+                                    <div class="message-text">好的，明白那孩子周六周天来上课程就行，四节课的知识点都是独立的[抱拳]</div>
+                                    <div class="message-controls">
+                                        <label>
+                                            <input type="checkbox" class="include-checkbox" checked>
+                                            包含在测试中
+                                        </label>
+                                        <button class="control-btn" onclick="retestMessage(this)">重新测试</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 聊天输入区域 -->
+                        <div class="chat-input-panel" style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid #d9d9d9; background: #fafafa;">
+                            <span id="workflow-role-tip">作为</span>
+                            <select id="workflowSenderRole" style="padding: 4px 8px; border-radius: 2px; border: 1px solid #d9d9d9;" onchange="updateRoleTip('workflow')">
+                                <option value="parent">家长</option>
+                                <option value="teacher">老师</option>
+                            </select>
+                            <span id="workflow-role-tip">发送信息：</span>
+                            <select id="emojiPicker" style="padding: 4px 8px; border-radius: 2px; border: 1px solid #d9d9d9;">
+                                <option value="">添加表情</option>
+                            </select>
+                            <input id="chatInput" type="text" placeholder="请输入消息..." style="flex:1; padding: 6px 8px; border-radius: 2px; border: 1px solid #d9d9d9;">
+                            <button class="action-btn primary-btn" onclick="sendChatMessage()">发送</button>
+                        </div>
+                        <!-- 操作区 -->
+                        <div class="action-panel">
+                            <button class="action-btn" onclick="saveTestCase()" style="margin-left: auto;">保存会话</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 工作流测试区 -->
+                <div id="workflow-panel" style="display: none; flex-direction: column; height: 100%;">
+                    <div class="workflow-mode" style="flex:1; flex-direction:column;">
+                        <!-- 机器人基本信息 -->
+                        <div class="workflow-bot-info" style="background:#fff; border-bottom:1px solid #f0f2f5; padding:16px;">
+                            <h3 style="margin:0 0 8px 0;">机器人信息</h3>
+                            <div>机器人名称：<b>自定义</b></div>
+                            <div>创建时间：2025-06-01</div>
+                            <div>创建任务：A, B, C, D </div>
+                            <div>版本：v2.1</div>
+                        </div>
+                        <!-- 聊天区 -->
+                        <div class="workflow-conversation-panel" style="flex:1; display:flex; flex-direction:column; background:#fff;">
+                            <div style="padding: 12px 16px; font-weight: bold; font-size: 16px; border-bottom: 1px solid #f0f2f5; background: #fafafa;">聊天框</div>
+                            <div class="conversation-container" id="workflow-conversation-container" style="flex:1; overflow-y:auto; padding:16px;">
+                                <!-- 示例对话 -->
+                                <div class="message parent">
+                                    <div class="message-header">
+                                        <div class="message-avatar">家</div>
+                                        <div class="message-sender">家长</div>
+                                        <div class="message-time">2025-06-20 10:00:00</div>
+                                    </div>
+                                    <div class="message-content">
+                                        <div class="message-text">课怎么买</div>
+                                        <div class="message-controls">
+                                            <label>
+                                                <input type="checkbox" class="include-checkbox" checked>
+                                                包含在测试中
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="message ai" style="background:#e6f7ff;">
+                                    <div class="message-header">
+                                        <div class="message-avatar">AI</div>
+                                        <div class="message-sender">AI</div>
+                                        <div class="message-time">2025-06-20 10:00:05</div>
+                                    </div>
+                                    <div class="message-content">
+                                        <div class="message-text">您可以在课程中心选择购买，支持多种支付方式。</div>
+                                        <div class="message-controls">
+                                            <label>
+                                                <input type="checkbox" class="include-checkbox" checked>
+                                                包含在测试中
+                                            </label>
+                                            <button class="control-btn" onclick="retestMessage(this)">重新测试</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chat-input-panel" style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid #d9d9d9; background: #fafafa;">
+                                <span id="workflow-role-tip">作为</span>
+                                <select id="workflowSenderRole" style="padding: 4px 8px; border-radius: 2px; border: 1px solid #d9d9d9;" onchange="updateRoleTip('workflow')">
+                                    <option value="parent">家长</option>
+                                    <option value="teacher">老师</option>
+                                </select>
+                                <span id="workflow-role-tip">发送信息：</span>
+                                <select id="workflowEmojiPicker" style="padding: 4px 8px; border-radius: 2px; border: 1px solid #d9d9d9;">
+                                    <option value="">添加表情</option>
+                                </select>
+                                <input id="workflowChatInput" type="text" placeholder="请输入消息..." style="flex:1; padding: 6px 8px; border-radius: 2px; border: 1px solid #d9d9d9;">
+                                <button class="action-btn primary-btn" onclick="sendWorkflowChatMessage()">发送</button>
+                            </div>
+                            <div class="action-panel">
+                                <button class="action-btn" onclick="saveWorkflowSession()" style="margin-left: auto;">保存会话</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 会话记录弹窗 -->
+    <div id="sessionLogModal" style="display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.25); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:8px; min-width:340px; max-width:90vw; min-height:180px; box-shadow:0 4px 24px rgba(0,0,0,0.18); padding:24px 28px 18px 28px; position:relative;">
+            <div style="font-size:18px; font-weight:bold; margin-bottom:12px;">会话记录</div>
+            <div style="color:#888; font-size:14px; margin-bottom:16px;">展示已保存的记录，点击后可以跳转到该测试记录。</div>
+            <ul id="sessionLogList" style="list-style:none; padding:0; margin:0;">
+                <li style="padding:8px 0; border-bottom:1px solid #f0f0f0; cursor:pointer; color:#1890ff;" onclick="gotoSession('20240601-001')">2024-06-01 家长咨询课时包</li>
+                <li style="padding:8px 0; border-bottom:1px solid #f0f0f0; cursor:pointer; color:#1890ff;" onclick="gotoSession('20240602-002')">2024-06-02 AI自动答疑测试</li>
+                <li style="padding:8px 0; border-bottom:1px solid #f0f0f0; cursor:pointer; color:#1890ff;" onclick="gotoSession('20240603-003')">2024-06-03 工作流流程测试</li>
+            </ul>
+            <button onclick="closeSessionLog()" style="position:absolute; right:12px; top:10px; background:none; border:none; font-size:20px; color:#888; cursor:pointer;">×</button>
+        </div>
+    </div>
+
+    <script>
+        // 加载会话
+        function loadSession(sessionId) {
+            // 实际应用中这里会从API加载数据
+            console.log('加载会话:', sessionId);
+            
+            // 更新表格选中状态
+            document.querySelectorAll('.session-table tr').forEach(tr => {
+                tr.classList.remove('active');
+            });
+            event.target.closest('tr').classList.add('active');
+            
+            // 这里只是示例，实际应用中会替换整个对话内容
+        }
+        
+        // 重新测试单条消息
+        function retestMessage(button) {
+            const message = button.closest('.message');
+            // 仅允许AI消息重试
+            if (!message.classList.contains('ai')) return;
+            const contentDiv = message.querySelector('.message-content');
+            // 显示加载状态
+            const loading = document.createElement('div');
+            loading.textContent = '测试中...';
+            loading.style.color = '#999';
+            contentDiv.appendChild(loading);
+            // 模拟API调用延迟
+            setTimeout(() => {
+                contentDiv.removeChild(loading);
+                // 创建测试结果区域（带特殊样式）
+                const testResult = document.createElement('div');
+                testResult.className = 'test-result-box';
+                testResult.innerHTML = `
+                    <div class="test-result-title">AI重试结果 <span style='font-size:12px;color:#888;'>(${new Date().toLocaleString()})</span></div>
+                    <div class="test-result-diff">这是重新测试后的AI回复，会与<span class="diff-removed">原结果</span>进行<span class="diff-added">差异对比</span>。</div>
+                `;
+                contentDiv.appendChild(testResult);
+                testResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 800);
+        }
+        
+        // 发送聊天消息
+        function sendChatMessage() {
+            const role = document.getElementById('senderRole').value;
+            const emoji = document.getElementById('emojiPicker').options[document.getElementById('emojiPicker').selectedIndex].text;
+            const input = document.getElementById('chatInput');
+            let text = input.value;
+            if (emoji && emoji !== '添加表情') text += ' ' + emoji;
+            if (!text.trim()) return;
+            const conversation = document.getElementById('conversation-container');
+            // 构造消息HTML
+            const now = new Date();
+            const timeStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + ' ' + now.toTimeString().slice(0,8);
+            let sender = role === 'parent' ? '家长' : (role === 'teacher' ? '老师' : 'AI');
+            let avatar = role === 'parent' ? '家' : (role === 'teacher' ? '师' : 'AI');
+            let msgClass = role;
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${msgClass}`;
+            msgDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="message-avatar">${avatar}</div>
+                    <div class="message-sender">${sender}</div>
+                    <div class="message-time">${timeStr}</div>
+                </div>
+                <div class="message-content">
+                    <div class="message-text">${text}</div>
+                    <div class="message-controls">
+                        <label>
+                            <input type="checkbox" class="include-checkbox" checked>
+                            包含在测试中
+                        </label>
+                        ${role === 'ai' ? '<button class="control-btn" onclick="retestMessage(this)">重新测试</button>' : ''}
+                    </div>
+                </div>
+            `;
+            conversation.appendChild(msgDiv);
+            input.value = '';
+            conversation.scrollTop = conversation.scrollHeight;
+        }
+        
+        // 保存会话
+        function saveTestCase() {
+            alert('测试用例已保存（实际应用中会调用API）');
+        }
+        
+        // 初始化 - 加载第一条会话
+        document.addEventListener('DOMContentLoaded', function() {
+            // 可以添加初始化逻辑
+        });
+
+        function updateRoleTip(type) {
+            let role, tipId;
+            if (type === 'badcase') {
+                role = document.getElementById('senderRole').value;
+                tipId = 'badcase-role-tip';
+            } else {
+                role = document.getElementById('workflowSenderRole').value;
+                tipId = 'workflow-role-tip';
+            }
+            let roleName = role === 'parent' ? '家长' : (role === 'teacher' ? '老师' : 'AI');
+            document.getElementById(tipId).textContent = `作为【${roleName}】发送信息：`;
+        }
+
+        function openSessionLog() {
+            document.getElementById('sessionLogModal').style.display = 'flex';
+        }
+
+        function closeSessionLog() {
+            document.getElementById('sessionLogModal').style.display = 'none';
+        }
+
+        function gotoSession(sessionId) {
+            closeSessionLog();
+            alert('跳转到测试记录: ' + sessionId + '（实际应用中会定位到该会话）');
+        }
+
+        function switchMode(mode, btn) {
+            // 切换按钮高亮
+            document.querySelectorAll('.mode-btn').forEach(b => {
+                b.classList.remove('active');
+                b.classList.add('inactive');
+            });
+            if (btn) {
+                btn.classList.add('active');
+                btn.classList.remove('inactive');
+            } else {
+                document.querySelector('.mode-btn[data-mode="' + mode + '"]').classList.add('active');
+                document.querySelector('.mode-btn[data-mode="' + mode + '"]').classList.remove('inactive');
+            }
+            // 切换内容区显示
+            if (mode === 'workflow') {
+                document.getElementById('badcase-panel').style.display = 'none';
+                document.getElementById('workflow-panel').style.display = 'flex';
+            } else {
+                document.getElementById('badcase-panel').style.display = 'flex';
+                document.getElementById('workflow-panel').style.display = 'none';
+            }
+        }
+
+        // 工作流模式下发送消息
+        function sendWorkflowChatMessage() {
+            const role = document.getElementById('workflowSenderRole').value;
+            const emoji = document.getElementById('workflowEmojiPicker').options[document.getElementById('workflowEmojiPicker').selectedIndex].text;
+            const input = document.getElementById('workflowChatInput');
+            let text = input.value;
+            if (emoji && emoji !== '添加表情') text += ' ' + emoji;
+            if (!text.trim()) return;
+            const conversation = document.getElementById('workflow-conversation-container');
+            // 构造消息HTML
+            const now = new Date();
+            const timeStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + ' ' + now.toTimeString().slice(0,8);
+            let sender = role === 'parent' ? '家长' : (role === 'teacher' ? '老师' : 'AI');
+            let avatar = role === 'parent' ? '家' : (role === 'teacher' ? '师' : 'AI');
+            let msgClass = role;
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${msgClass}`;
+            msgDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="message-avatar">${avatar}</div>
+                    <div class="message-sender">${sender}</div>
+                    <div class="message-time">${timeStr}</div>
+                </div>
+                <div class="message-content">
+                    <div class="message-text">${text}</div>
+                    <div class="message-controls">
+                        <label>
+                            <input type="checkbox" class="include-checkbox" checked>
+                            包含在测试中
+                        </label>
+                    </div>
+                </div>
+            `;
+            conversation.appendChild(msgDiv);
+            input.value = '';
+            conversation.scrollTop = conversation.scrollHeight;
+        }
+
+        // 保存工作流会话
+        function saveWorkflowSession() {
+            alert('工作流会话已保存（实际应用中会调用API）');
+        }
+    </script>
+</body>
+</html>
+           
